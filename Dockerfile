@@ -10,3 +10,4 @@ COPY .build/${OS}-${ARCH}/apache_exporter /bin/apache_exporter
 EXPOSE      9117
 USER        nobody
 ENTRYPOINT  [ "/bin/apache_exporter" ]
+

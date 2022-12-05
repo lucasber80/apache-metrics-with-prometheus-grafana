@@ -5,11 +5,59 @@ services:
     container_name: apache_exporter
     privileged: true
     ports:
-    - mode: ingress
-      target: 9117
-      published: "9117"
-      protocol: tcp
+      - mode: ingress
+        target: 9117
+        published: "9117"
+        protocol: tcp
+    depends_on:
+      - "wordpress"
+      - "db"
     restart: unless-stopped
     extra_hosts:
-    - "localhost:127.17.0.1"
-    entrypoint: /bin/apache_exporter  --scrape_uri="http://172.17.0.1/server-status?auto"
+      - "host.docker.internal:127.17.0.1"
+    entrypoint: /bin/apache_exporter  --scrape_uri="http://172.17.0.1:8080/server-status?auto"
+
+  pro:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - "apache_exporter"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - "pro"
+
+  wordpress:
+    image: wordpress
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_NAME: exampledb
+    volumes:
+      - wordpress:/var/www/html
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: exampledb
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepass
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db:/var/lib/mysql
+
+volumes:
+  wordpress:
+  db:
